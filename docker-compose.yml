@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: docquest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docquest
+      POSTGRES_USER: docquest_user
+      POSTGRES_PASSWORD: strong_password_here
+    volumes:
+      - docquest_postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: docquest-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@docquest.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    depends_on:
+      - postgres
+    volumes:
+      - docquest_pgadmin_data:/var/lib/pgadmin
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docquest-backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: prod
+      LLM_PROVIDER: gemini
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GEMINI_MODEL_NAME: gemini-2.5-flash
+      GEMINI_EMBEDDING_MODEL_NAME: gemini-embedding-001
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: docquest
+      POSTGRES_USER: docquest_user
+      POSTGRES_PASSWORD: strong_password_here
+      POSTGRES_SSLMODE: disable
+      AUTH_USERNAME: admin
+      AUTH_PASSWORD: change_this_password
+      AUTH_SECRET_KEY: change_this_to_a_long_random_secret
+      AUTH_ALGORITHM: HS256
+      AUTH_TOKEN_EXPIRE_MINUTES: 720
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      DATA_DIR: Data
+      STORAGE_DIR: storage
+      UPLOAD_DIR: uploads
+    depends_on:
+      - postgres
+    volumes:
+      - ./Data:/app/Data
+      - ./storage:/app/storage
+      - ./uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_INTERNAL_URL: http://backend:8000
+    container_name: docquest-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: /api/backend
+      BACKEND_INTERNAL_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  docquest_postgres_data:
+  docquest_pgadmin_data:
