@@ -1,58 +1,44 @@
-# DocQuest v2 – Production-Ready Document Intelligence Platform
+# DocQuest – AI Document Q&A System
 
-DocQuest is an API-first, full-stack document Q&A system with secure authentication, workspace management, and advanced RAG capabilities.
+DocQuest is a simple and interactive web application that allows you to ask questions about your uploaded documents and get accurate, source-grounded answers using AI.
 
 ## 🎯 What It Does
 
-- **Private Document QA**: Answers questions grounded in your uploaded documents, not generic LLM knowledge
-- **Traceable Answers**: Each response includes source citations and verification scores
-- **Enterprise Ready**: Authentication, workspaces, API keys, deployment-ready with Docker
-- **Advanced Retrieval**: Multiple retrieval strategies, structured response modes, verification scoring
-- **Production Features**: Memory graphs, query automation, evaluation telemetry, webhooks
+- Upload PDF, DOCX, or TXT documents
+- Ask natural language questions about your documents
+- Get answers grounded in your actual document content (not generic AI knowledge)
+- View your conversation history
+- Secure login with JWT authentication
 
-## 🏗️ Architecture
+## 🛠️ Tech Stack
 
-- **Backend**: FastAPI + SQLAlchemy + PostgreSQL
+- **Backend**: FastAPI + SQLAlchemy + SQLite/PostgreSQL
 - **Frontend**: Next.js 14 + React + Tailwind CSS
-- **LLM**: Google Gemini (embedding + generation)
-- **Storage**: PostgreSQL for conversations/metadata; local disk for documents
-- **Deployment**: Docker + Render (backend) + Vercel (frontend) + Neon (PostgreSQL)
+- **LLM**: Google Gemini (embedding + text generation)
+- **Storage**: Local file system for documents
 
-## 📦 Project Structure
+## 📁Project Structure
 
 ```
 .
-├── api.py                          # FastAPI entrypoint
+├── api.py                      # FastAPI backend entrypoint
 ├── QAWithPDF/
-│   ├── __init__.py
-│   ├── auth.py                    # JWT + API key authentication
-│   ├── config.py                  # Settings from environment
-│   ├── data_ingestion.py          # PDF/DOCX/TXT parsing & chunking
-│   ├── embedding.py               # Query engine setup with retrieval modes
-│   ├── model_api.py               # LLM response generation
-│   ├── service.py                 # Business logic (retrieval, output modes, verification, graphs)
-│   ├── db_models.py               # SQLAlchemy ORM entities
-│   ├── schemas.py                 # Pydantic request/response models
-│   ├── db.py                      # Database initialization
-│   ├── exception.py               # Custom exceptions
-│   └── __pycache__/
-├── frontend/                       # Next.js web app
+│   ├── auth.py                # JWT authentication
+│   ├── config.py              # Configuration from .env
+│   ├── data_ingestion.py      # PDF/DOCX/TXT parsing
+│   ├── embedding.py           # Document embedding & retrieval
+│   ├── model_api.py           # LLM response generation
+│   ├── service.py             # Business logic
+│   ├── db_models.py           # Database models
+│   ├── db.py                  # Database setup
+│   └── schemas.py             # Request/response schemas
+├── frontend/                  # Next.js web app
 │   ├── app/
-│   │   ├── login/page.tsx         # Auth + landing page
-│   │   ├── dashboard/page.tsx     # Main app interface
-│   │   └── ...
-│   ├── lib/api.ts                 # API client with auth headers
-│   ├── next.config.mjs            # Rewrite backend proxy
-│   ├── Dockerfile
-│   └── package.json
-├── Dockerfile                      # Backend Python container
-├── docker-compose.yml             # Local dev stack
-├── requirements.txt               # Python dependencies
-├── .env.example                   # Environment template
-├── .env.production                # Production env template
-├── render.yaml                    # Render deployment config
-├── vercel.json                    # Vercel deployment config
-├── DEPLOYMENT_FREE.md             # Free tier deployment guide
+│   │   ├── login/page.tsx    # Login/signup page
+│   │   └── dashboard/        # Main app interface
+│   └── lib/api.ts            # API client
+├── requirements.txt           # Python dependencies
+├── .env.example              # Environment template
 └── README.md
 ```
 
@@ -79,150 +65,99 @@ Set `GOOGLE_API_KEY` (get from https://aistudio.google.com/app/apikeys):
 GOOGLE_API_KEY=your_key_here
 ```
 
-### 3. Database Setup (Optional for local dev; uses SQLite fallback)
+## 🚀 Quick Start
 
-For PostgreSQL:
+### 1. Install Dependencies
 
+**Python**:
 ```bash
-# Windows (adjust service name as needed)
-Start-Service postgresql-x64-17
-
-# Create DB and user
-psql -U postgres -h localhost
+pip install -r requirements.txt
 ```
 
-```sql
-CREATE DATABASE docquest;
-CREATE USER docquest_user WITH ENCRYPTED PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE docquest TO docquest_user;
+**Node.js (Frontend)**:
+```bash
+cd frontend
+npm install
+cd ..
 ```
 
-Update `.env`:
+### 2. Setup Environment
 
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+Get your free Google API key from https://aistudio.google.com/app/apikeys and add it:
 ```env
-DATABASE_URL=postgresql+psycopg2://docquest_user:your_password@localhost:5432/docquest
+GOOGLE_API_KEY=your_key_here
 ```
 
-### 4. Run Locally
+### 3. Run the App
 
-**Terminal 1 (Backend)**:
+**Terminal 1 - Backend** (port 8000):
 ```bash
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**Terminal 2 (Frontend)**:
+**Terminal 2 - Frontend** (port 3000):
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open: http://localhost:3000/login
+### 4. Open in Browser
 
-**Default credentials** (from `.env.example`):
+Go to: **http://localhost:3000**
+
+**Default login credentials**:
 - Username: `admin`
 - Password: `admin123`
 
-### 5. Test the App
+### 5. Use the App
 
-1. Login with default credentials
-2. Upload a PDF, DOCX, or TXT file
-3. Ask a question about the document
-4. View conversation history
+1. Click **Upload Document** and select a PDF, DOCX, or TXT file
+2. Ask questions about your document
+3. View conversation history
 
-## 🌐 Production Deployment
+## 📝 Environment Variables
 
-**FASTEST FREE OPTION**: Render (backend) + Neon (database) + Vercel (frontend)
+See `.env.example` for all options. Key variables:
 
-See [DEPLOYMENT_FREE.md](DEPLOYMENT_FREE.md) for step-by-step instructions.
-
-**Or use Docker Compose locally**:
-
-```bash
-docker-compose up -d
-# Opens on http://localhost:3000
-```
-
-## 🔑 Key APIs
-
-### Authentication
-
-```
-POST /api/v1/auth/login
-POST /api/v1/auth/signup
-```
-
-### Documents & Chat
-
-```
-POST /api/v1/documents/upload       # Upload PDF/DOCX/TXT
-POST /api/v1/chat/query             # Ask a question
-GET /api/v1/conversations           # List conversations
-GET /api/v1/conversations/{id}      # Get conversation + messages
-```
-
-### Advanced Features
-
-```
-POST /api/v1/workspaces             # Create workspace
-GET /api/v1/workspaces              # List workspaces
-GET /api/v1/workspaces/{id}/graph   # Memory graph
-POST /api/v1/automations            # Create automation
-POST /api/v1/automations/{id}/run   # Run automation
-GET /api/v1/monitoring/evaluations  # Evaluation summary
-POST /api/v1/api-keys               # Create API key
-```
-
-## ⚙️ Configuration
-
-All settings from environment variables (see `.env.example`):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable | Default | Purpose |
+|----------|---------|---------|
 | `GOOGLE_API_KEY` | (required) | Gemini API key |
-| `DATABASE_URL` | SQLite | PostgreSQL connection string |
-| `AUTH_SECRET_KEY` | (required in prod) | JWT signing key |
-| `CORS_ORIGINS` | localhost:3000/3001 | Allowed frontend origins |
-| `TOP_K` | 5 | Document chunks to retrieve |
-| `CHUNK_SIZE` | 800 | Document chunk size in tokens |
+| `AUTH_USERNAME` | `admin` | Login username |
+| `AUTH_PASSWORD` | `admin123` | Login password |
+| `TOP_K` | `5` | Number of document chunks to retrieve |
+| `CHUNK_SIZE` | `800` | Size of each document chunk |
 
 ## 🐛 Troubleshooting
 
-**"CORS error" in browser**: 
-- Add your frontend URL to `CORS_ORIGINS` in `.env` and restart backend.
+**Backend won't start**:
+- Ensure Python 3.10+ is installed: `python --version`
+- Try reinstalling dependencies: `pip install --upgrade -r requirements.txt`
 
-**"Connection refused" on API calls**:
-- Ensure backend is running: `uvicorn api:app --reload`
-- Check `NEXT_PUBLIC_API_BASE_URL` in frontend `.env`
+**Frontend won't start**:
+- Ensure Node 18+ is installed: `node --version`
+- Clear node_modules: `cd frontend && rm -rf node_modules && npm install`
 
-**"PostgreSQL connection failed"**:
-- Verify PostgreSQL is running
-- Check `DATABASE_URL` format
-- Or just use SQLite (auto-fallback in dev)
+**"Login failed" error**:
+- Restart the backend: `Ctrl+C` and run `uvicorn api:app --reload`
+- Check your credentials match `.env` file
 
-**Upload fails**:
-- Check file size (PDFs/DOCXs should be < 10MB for free tier)
-- Verify `UPLOAD_DIR` exists: `mkdir -p uploads`
+**"Cannot find documents" or upload fails**:
+- Ensure `uploads/` folder exists: `mkdir -p uploads`
+- Check backend console for error details
 
-**Render backend sleeping**:
-- Free tier auto-sleeps after 15 min idle; first request takes 10-30 sec
-- Upgrade to paid tier if you need always-on
+**CORS errors**:
+- Usually fixed by restarting both backend and frontend
 
-## 📚 Advanced Features
+## 🔐 Security Notes
 
-- **Retrieval Modes**: `standard`, `hybrid`, `decompose`, `rerank`
-- **Output Modes**: `standard`, `bullet_points`, `executive_brief`, `table`, `json`
-- **Verification**: Source-grounded confidence scores
-- **Memory Graph**: Knowledge graph extraction from conversations
-- **Query Automation**: Schedule recurring questions
-- **Evaluation**: Track QA accuracy and user feedback
-
-## 🔐 Security
-
-- **JWT Authentication**: Secure token-based access
-- **API Keys**: Alternative key-based auth for integrations
-- **Password Hashing**: bcrypt with salt
-- **CORS**: Configurable allowed origins
-- **Environment Secrets**: Sensitive values in `.env` (not committed)
+- **Default credentials are for local dev only** – change `AUTH_PASSWORD` and `AUTH_SECRET_KEY` in `.env` if running on a network
+- Never commit `.env` to version control
+- `GOOGLE_API_KEY` is required to run the app
 
 ## 📄 License
 
@@ -231,67 +166,6 @@ MIT
 ## 👤 Author
 
 Vishal (vishal220703)
-
-## 🤝 Contributing
-
-Pull requests welcome. For major changes, open an issue first.
-
-```sql
-SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC;
-SELECT conversation_id, role, LEFT(content, 80) FROM messages ORDER BY created_at DESC;
-```
-
-9. Troubleshooting
-
-- If PostgreSQL is unavailable at startup, backend falls back to `sqlite:///./docquest_memory.db`.
-- Fix `DATABASE_URL` and restart backend to return to PostgreSQL.
-
-## Docker deployment (step-by-step)
-
-This repository now includes:
-
-- `Dockerfile` for backend
-- `frontend/Dockerfile` for frontend
-- `docker-compose.yml` with `postgres`, `pgadmin`, `backend`, and `frontend`
-
-### 1. Prerequisites
-
-- Install Docker Desktop
-- Ensure Docker is running
-- Ensure ports are free or change them in `docker-compose.yml`:
-  - `3000` (frontend)
-  - `8000` (backend)
-  - `5432` (postgres)
-  - `5050` (pgAdmin)
-
-### 2. Set required environment values
-
-From project root, create/update `.env` and add at least:
-
-```env
-GOOGLE_API_KEY=your_real_google_api_key
-```
-
-The compose file already wires database and auth defaults. For production, change these values in `docker-compose.yml`:
-
-- `POSTGRES_PASSWORD`
-- `AUTH_PASSWORD`
-- `AUTH_SECRET_KEY`
-- `PGADMIN_DEFAULT_PASSWORD`
-
-### 3. Build and start all services
-
-Run from project root:
-
-```bash
-docker compose up -d --build
-```
-
-Check status:
-
-```bash
-docker compose ps
-```
 
 ### 4. Access services
 
