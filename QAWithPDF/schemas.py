@@ -81,7 +81,6 @@ class ConversationSummary(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime
-    last_message_preview: str | None = None
 
 
 class ConversationDetail(BaseModel):

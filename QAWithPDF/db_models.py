@@ -20,6 +20,7 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid4().hex)
+    owner_username: Mapped[str] = mapped_column(String(64), index=True)
     document_id: Mapped[str] = mapped_column(String(128), index=True)
     title: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -41,6 +42,16 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    owner_username: Mapped[str] = mapped_column(String(64), index=True)
+    filename: Mapped[str] = mapped_column(String(255))
+    size_bytes: Mapped[int] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Workspace(Base):
@@ -110,6 +121,7 @@ class QueryEvaluation(Base):
     __tablename__ = "query_evaluations"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid4().hex)
+    owner_username: Mapped[str] = mapped_column(String(64), index=True)
     workspace_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("workspaces.id"), nullable=True, index=True)
     conversation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     document_id: Mapped[str] = mapped_column(String(128), index=True)

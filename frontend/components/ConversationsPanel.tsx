@@ -2,12 +2,6 @@
 
 import { ConversationSummary } from "@/lib/api";
 
-function normalizeChatTitle(value: string): string {
-  const raw = value.trim();
-  if (!raw) return "Document Chat";
-  return raw.replace(/^[a-z0-9]{10,}[_.-]+/i, "") || raw;
-}
-
 type Props = {
   items: ConversationSummary[];
   activeConversationId: string | null;
@@ -39,10 +33,7 @@ export default function ConversationsPanel({
                   : "border-slate-700 bg-slate-900/70 hover:border-slate-500 hover:bg-slate-800"
               } overflow-hidden`}
             >
-              <strong className="block truncate text-sm text-slate-100">{normalizeChatTitle(conversation.title)}</strong>
-              <span className="mt-1 block line-clamp-2 break-words text-xs text-slate-400">
-                {conversation.last_message_preview ?? "No messages yet"}
-              </span>
+              <strong className="block truncate text-sm text-slate-100">{conversation.title}</strong>
             </button>
           );
         })}

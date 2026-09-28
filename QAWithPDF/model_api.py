@@ -50,4 +50,21 @@ def load_model():
         raise ValueError("No valid Gemini model found")
     except Exception as e:
         raise customexception(e, sys)
+
+
+def summarize_chat_title(question: str) -> str:
+    fallback = " ".join(question.strip().split())[:80] or "New Chat"
+    prompt = (
+        "Summarize the user's question as a concise chat title. "
+        "Return only the title, with 3 to 7 words, no quotes, no punctuation at the end.\n\n"
+        f"Question: {question.strip()}"
+    )
+    try:
+        response = load_model().complete(prompt)
+        title = " ".join(str(getattr(response, "text", response)).strip().split())
+        title = title.strip('"\'`')
+        return title[:80] or fallback
+    except Exception:
+        logging.warning("Unable to summarize chat title with Gemini; using question fallback.")
+        return fallback
         

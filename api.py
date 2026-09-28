@@ -96,15 +96,18 @@ async def upload_document(
             workspace_id=workspace_id,
             owner_username=current_user,
         )
+    except FileNotFoundError as ex:
+        raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
 @app.post("/api/v1/chat/query", response_model=QueryResponse)
-def chat_query(payload: QueryRequest, _: str = Depends(get_current_user)) -> QueryResponse:
+def chat_query(payload: QueryRequest, current_user: str = Depends(get_current_user)) -> QueryResponse:
     try:
         return answer_question(
             document_id=payload.document_id,
+            owner_username=current_user,
             question=payload.question,
             conversation_id=payload.conversation_id,
             workspace_id=payload.workspace_id,
@@ -121,28 +124,36 @@ def chat_query(payload: QueryRequest, _: str = Depends(get_current_user)) -> Que
 
 @app.post("/api/v1/conversations", response_model=ConversationSummary)
 def create_conversation_route(
-    payload: ConversationCreateRequest, _: str = Depends(get_current_user)
+    payload: ConversationCreateRequest, current_user: str = Depends(get_current_user)
 ) -> ConversationSummary:
     try:
-        return create_conversation(document_id=payload.document_id, title=payload.title)
+        return create_conversation(
+            document_id=payload.document_id,
+            owner_username=current_user,
+            title=payload.title,
+        )
+    except FileNotFoundError as ex:
+        raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
 @app.get("/api/v1/conversations", response_model=list[ConversationSummary])
 def list_conversations_route(
-    document_id: str | None = None, _: str = Depends(get_current_user)
+    document_id: str | None = None, current_user: str = Depends(get_current_user)
 ) -> list[ConversationSummary]:
     try:
-        return list_conversations(document_id=document_id)
+        return list_conversations(document_id=document_id, owner_username=current_user)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
 @app.get("/api/v1/conversations/{conversation_id}", response_model=ConversationDetail)
-def get_conversation_route(conversation_id: str, _: str = Depends(get_current_user)) -> ConversationDetail:
+def get_conversation_route(
+    conversation_id: str, current_user: str = Depends(get_current_user)
+) -> ConversationDetail:
     try:
-        return get_conversation(conversation_id=conversation_id)
+        return get_conversation(conversation_id=conversation_id, owner_username=current_user)
     except FileNotFoundError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
@@ -217,10 +228,10 @@ def run_automation_route(
 @app.get("/api/v1/monitoring/evaluations", response_model=EvaluationSummaryResponse)
 def evaluation_summary_route(
     workspace_id: str | None = None,
-    _: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
 ) -> EvaluationSummaryResponse:
     try:
-        return get_evaluation_summary(workspace_id=workspace_id)
+        return get_evaluation_summary(workspace_id=workspace_id, owner_username=current_user)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 

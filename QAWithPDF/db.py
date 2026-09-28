@@ -1,7 +1,6 @@
 from contextlib import contextmanager
-import logging
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from QAWithPDF.config import get_database_url
@@ -13,26 +12,27 @@ engine = create_engine(get_database_url(), future=True, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
 
-def _fallback_to_sqlite() -> None:
-    global engine
-    sqlite_url = "sqlite:///./docquest_memory.db"
-    engine = create_engine(sqlite_url, future=True, pool_pre_ping=True)
-    SessionLocal.configure(bind=engine)
-    logging.warning(
-        "Falling back to SQLite memory store at %s because PostgreSQL could not be initialized.",
-        sqlite_url,
-    )
-
-
 def init_db() -> None:
     # Import models here so metadata is registered before create_all.
     from QAWithPDF import db_models  # noqa: F401
 
-    try:
-        Base.metadata.create_all(bind=engine)
-    except Exception:
-        _fallback_to_sqlite()
-        Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    _ensure_ownership_columns()
+
+
+def _ensure_ownership_columns() -> None:
+    columns_by_table = {
+        "conversations": "owner_username",
+        "query_evaluations": "owner_username",
+    }
+    with engine.begin() as connection:
+        inspector = inspect(connection)
+        for table_name, column_name in columns_by_table.items():
+            columns = {column["name"] for column in inspector.get_columns(table_name)}
+            if column_name not in columns:
+                connection.execute(
+                    text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" VARCHAR(64)')
+                )
 
 
 @contextmanager

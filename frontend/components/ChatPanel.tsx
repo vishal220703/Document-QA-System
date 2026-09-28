@@ -57,7 +57,7 @@ export default function ChatPanel({
     try {
       let conversationId = activeConversationId;
       if (!conversationId) {
-        const created = await createConversation(documentId, filename ?? "Document Chat");
+        const created = await createConversation(documentId);
         conversationId = created.id;
         onConversationChange(created.id);
       }

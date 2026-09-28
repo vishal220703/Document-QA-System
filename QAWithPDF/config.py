@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     postgres_password: str = Field(default="postgres", alias="POSTGRES_PASSWORD")
     postgres_sslmode: str = Field(default="disable", alias="POSTGRES_SSLMODE")
     cors_origins_raw: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",
+        default="http://localhost:3000,http://127.0.0.1:3000",
         alias="CORS_ORIGINS",
     )
     auth_username: str = Field(default="admin", alias="AUTH_USERNAME")
@@ -66,12 +66,9 @@ def get_cors_origins() -> list[str]:
     defaults = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
     ]
     configured = [origin.strip() for origin in settings.cors_origins_raw.split(",") if origin.strip()]
 
-    # Keep defaults to support both Docker frontend (3000) and local dev frontend (3001).
     merged: list[str] = []
     for origin in [*defaults, *configured]:
         if origin not in merged:

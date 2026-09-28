@@ -16,6 +16,7 @@ from QAWithPDF.db import get_session
 from QAWithPDF.db_models import (
     ApiKey,
     Conversation,
+    Document,
     MemoryEdge,
     MemoryNode,
     Message,
@@ -26,6 +27,7 @@ from QAWithPDF.db_models import (
     WorkspaceDocument,
 )
 from QAWithPDF.embedding import build_and_persist_index, load_query_engine
+from QAWithPDF.model_api import summarize_chat_title
 from QAWithPDF.schemas import (
     ApiKeyCreateResponse,
     ApiKeyResponse,
@@ -97,11 +99,24 @@ def _workspace_for_owner(session, workspace_id: str, owner_username: str) -> Wor
     return workspace
 
 
+def _document_for_owner(session, document_id: str, owner_username: str) -> Document:
+    document = (
+        session.execute(
+            select(Document).where(Document.id == document_id, Document.owner_username == owner_username)
+        )
+        .scalars()
+        .first()
+    )
+    if document is None:
+        raise FileNotFoundError(f"Document not found for user: {document_id}")
+    return document
+
+
 def ingest_document(
     file: UploadFile,
     content: bytes,
+    owner_username: str,
     workspace_id: str | None = None,
-    owner_username: str | None = None,
 ) -> DocumentUploadResponse:
     document_id, saved_path = _store_upload(file, content)
     display_name = file.filename or saved_path.name
@@ -109,8 +124,16 @@ def ingest_document(
     build_and_persist_index(documents=docs, index_dir=_document_storage_dir(document_id))
     ingestion_quality = _compute_ingestion_quality(docs)
 
-    if workspace_id and owner_username:
-        with get_session() as session:
+    with get_session() as session:
+        session.add(
+            Document(
+                id=document_id,
+                owner_username=owner_username,
+                filename=display_name,
+                size_bytes=len(content),
+            )
+        )
+        if workspace_id:
             _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
             link = WorkspaceDocument(
                 workspace_id=workspace_id,
@@ -134,9 +157,26 @@ def _conversation_title(question: str) -> str:
     return title[:80] if len(title) > 80 else title
 
 
-def create_conversation(document_id: str, title: str | None = None) -> ConversationSummary:
+def _conversation_display_title(conversation: Conversation, first_message: Message | None) -> str:
+    legacy_titles = {"new chat", "pdf", "docx", "txt"}
+    if (
+        first_message
+        and first_message.role == "user"
+        and first_message.content.strip()
+        and conversation.title.strip().lower() in legacy_titles
+    ):
+        return summarize_chat_title(first_message.content)
+    return conversation.title or "New Chat"
+
+
+def create_conversation(document_id: str, owner_username: str, title: str | None = None) -> ConversationSummary:
     with get_session() as session:
-        conversation = Conversation(document_id=document_id, title=title or "New Chat")
+        _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
+        conversation = Conversation(
+            owner_username=owner_username,
+            document_id=document_id,
+            title=title or "New Chat",
+        )
         session.add(conversation)
         session.flush()
         return ConversationSummary(
@@ -192,38 +232,50 @@ def list_workspaces(owner_username: str) -> list[WorkspaceResponse]:
         ]
 
 
-def list_conversations(document_id: str | None = None) -> list[ConversationSummary]:
+def list_conversations(document_id: str | None, owner_username: str) -> list[ConversationSummary]:
     with get_session() as session:
-        stmt = select(Conversation).order_by(Conversation.updated_at.desc())
+        stmt = (
+            select(Conversation)
+            .where(Conversation.owner_username == owner_username)
+            .order_by(Conversation.updated_at.desc())
+        )
         if document_id:
             stmt = stmt.where(Conversation.document_id == document_id)
 
         rows = session.execute(stmt).scalars().all()
         summaries: list[ConversationSummary] = []
         for conv in rows:
-            last_msg_stmt = (
+            first_msg_stmt = (
                 select(Message)
                 .where(Message.conversation_id == conv.id)
-                .order_by(Message.created_at.desc())
+                .order_by(Message.created_at.asc())
                 .limit(1)
             )
-            last_msg = session.execute(last_msg_stmt).scalar_one_or_none()
+            first_msg = session.execute(first_msg_stmt).scalar_one_or_none()
             summaries.append(
                 ConversationSummary(
                     id=conv.id,
                     document_id=conv.document_id,
-                    title=conv.title,
+                    title=_conversation_display_title(conv, first_msg),
                     created_at=conv.created_at,
                     updated_at=conv.updated_at,
-                    last_message_preview=(last_msg.content[:120] if last_msg else None),
                 )
             )
         return summaries
 
 
-def get_conversation(conversation_id: str) -> ConversationDetail:
+def get_conversation(conversation_id: str, owner_username: str) -> ConversationDetail:
     with get_session() as session:
-        conv = session.get(Conversation, conversation_id)
+        conv = (
+            session.execute(
+                select(Conversation).where(
+                    Conversation.id == conversation_id,
+                    Conversation.owner_username == owner_username,
+                )
+            )
+            .scalars()
+            .first()
+        )
         if conv is None:
             raise FileNotFoundError(f"Conversation not found: {conversation_id}")
 
@@ -255,22 +307,44 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
         return ConversationDetail(
             id=conv.id,
             document_id=conv.document_id,
-            title=conv.title,
+            title=_conversation_display_title(conv, rows[0] if rows else None),
             created_at=conv.created_at,
             updated_at=conv.updated_at,
             messages=messages,
         )
 
 
-def _resolve_conversation(document_id: str, question: str, conversation_id: str | None) -> str:
+def _resolve_conversation(
+    document_id: str,
+    question: str,
+    conversation_id: str | None,
+    owner_username: str,
+) -> str:
     with get_session() as session:
+        _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
         if conversation_id:
-            conv = session.get(Conversation, conversation_id)
+            conv = (
+                session.execute(
+                    select(Conversation).where(
+                        Conversation.id == conversation_id,
+                        Conversation.owner_username == owner_username,
+                        Conversation.document_id == document_id,
+                    )
+                )
+                .scalars()
+                .first()
+            )
             if conv is None:
                 raise FileNotFoundError(f"Conversation not found: {conversation_id}")
+            if conv.title.strip().lower() in {"new chat", "pdf", "docx", "txt"}:
+                conv.title = summarize_chat_title(question)
             return conv.id
 
-        conv = Conversation(document_id=document_id, title=_conversation_title(question) or "New Chat")
+        conv = Conversation(
+            owner_username=owner_username,
+            document_id=document_id,
+            title=_conversation_title(question) or "New Chat",
+        )
         session.add(conv)
         session.flush()
         return conv.id
@@ -485,6 +559,7 @@ def _update_workspace_memory_graph(workspace_id: str, question: str, answer: str
 
 def _log_evaluation(
     document_id: str,
+    owner_username: str,
     question: str,
     retrieval_mode: str,
     output_mode: str,
@@ -498,6 +573,7 @@ def _log_evaluation(
     with get_session() as session:
         session.add(
             QueryEvaluation(
+                owner_username=owner_username,
                 workspace_id=workspace_id,
                 conversation_id=conversation_id,
                 document_id=document_id,
@@ -552,6 +628,7 @@ def _query_with_mode(query_engine, question: str, retrieval_mode: str) -> tuple[
 
 def answer_question(
     document_id: str,
+    owner_username: str,
     question: str,
     conversation_id: str | None = None,
     workspace_id: str | None = None,
@@ -563,6 +640,11 @@ def answer_question(
     started_at = time.perf_counter()
     resolved_conversation_id: str | None = None
     try:
+        with get_session() as session:
+            _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
+            if workspace_id:
+                _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+
         query_engine = load_query_engine(_document_storage_dir(document_id), top_k=top_k)
 
         raw_answer, source_nodes, retrieval_trace = _query_with_mode(
@@ -579,6 +661,7 @@ def answer_question(
             document_id=document_id,
             question=question,
             conversation_id=conversation_id,
+            owner_username=owner_username,
         )
         _append_message(conversation_id=resolved_conversation_id, role="user", content=question)
         _append_message_with_citations(
@@ -594,6 +677,7 @@ def answer_question(
         elapsed_ms = (time.perf_counter() - started_at) * 1000.0
         _log_evaluation(
             document_id=document_id,
+            owner_username=owner_username,
             question=question,
             retrieval_mode=retrieval_mode,
             output_mode=output_mode,
@@ -617,6 +701,7 @@ def answer_question(
         elapsed_ms = (time.perf_counter() - started_at) * 1000.0
         _log_evaluation(
             document_id=document_id,
+            owner_username=owner_username,
             question=question,
             retrieval_mode=retrieval_mode,
             output_mode=output_mode,
@@ -669,6 +754,19 @@ def get_workspace_graph(workspace_id: str, owner_username: str) -> WorkspaceGrap
 def create_query_automation(payload: QueryAutomationCreateRequest, owner_username: str) -> QueryAutomationResponse:
     with get_session() as session:
         _workspace_for_owner(session=session, workspace_id=payload.workspace_id, owner_username=owner_username)
+        _document_for_owner(session=session, document_id=payload.document_id, owner_username=owner_username)
+        link = (
+            session.execute(
+                select(WorkspaceDocument).where(
+                    WorkspaceDocument.workspace_id == payload.workspace_id,
+                    WorkspaceDocument.document_id == payload.document_id,
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if link is None:
+            raise FileNotFoundError(f"Document is not part of workspace: {payload.document_id}")
         automation = QueryAutomation(
             workspace_id=payload.workspace_id,
             name=payload.name.strip(),
@@ -737,9 +835,11 @@ def run_query_automation(automation_id: str, owner_username: str) -> QueryAutoma
         if automation is None:
             raise FileNotFoundError(f"Automation not found: {automation_id}")
         _workspace_for_owner(session=session, workspace_id=automation.workspace_id, owner_username=owner_username)
+        _document_for_owner(session=session, document_id=automation.document_id, owner_username=owner_username)
 
     result = answer_question(
         document_id=automation.document_id,
+        owner_username=owner_username,
         question=automation.prompt,
         workspace_id=automation.workspace_id,
         retrieval_mode=automation.retrieval_mode,
@@ -769,10 +869,11 @@ def run_query_automation(automation_id: str, owner_username: str) -> QueryAutoma
     )
 
 
-def get_evaluation_summary(workspace_id: str | None = None) -> EvaluationSummaryResponse:
+def get_evaluation_summary(workspace_id: str | None, owner_username: str) -> EvaluationSummaryResponse:
     with get_session() as session:
-        stmt = select(QueryEvaluation)
+        stmt = select(QueryEvaluation).where(QueryEvaluation.owner_username == owner_username)
         if workspace_id:
+            _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
             stmt = stmt.where(QueryEvaluation.workspace_id == workspace_id)
         rows = session.execute(stmt).scalars().all()
 
