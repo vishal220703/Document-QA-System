@@ -38,7 +38,7 @@ DocQuest is a simple and interactive web application that allows you to ask ques
 │   │   └── dashboard/        # Main app interface
 │   └── lib/api.ts            # API client
 ├── requirements.txt           # Python dependencies
-├── .env.example              # Environment template
+├── .env.example               # Safe environment template
 └── README.md
 ```
 
@@ -58,9 +58,9 @@ npm install
 
 ### 2. Setup Environment
 
-Copy `.env.example` to `.env`:
+Copy the safe environment template to `.env`, then configure your database, authentication, and Gemini API key:
 ```bash
-cp .env.example .env
+Copy-Item .env.example .env
 ```
 
 Get your free Google API key from https://aistudio.google.com/app/apikeys and add it:
@@ -93,7 +93,7 @@ Go to: **http://localhost:3000**
 
 ## 📝 Environment Variables
 
-See `.env.example` for all options. Key variables:
+Key variables in `.env` include:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
