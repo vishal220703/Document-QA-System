@@ -73,7 +73,13 @@ export default function LoginPage() {
       setAuthToken(result.access_token);
       router.replace("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : mode === "signup" ? "Sign up failed" : "Login failed");
+      setError(
+        err instanceof Error
+          ? err.message
+          : mode === "signup"
+            ? "Sign up failed"
+            : "Login failed",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -90,17 +96,26 @@ export default function LoginPage() {
       <section className="relative mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 gap-8 px-4 py-8 md:px-6 lg:grid-cols-[1.3fr_0.9fr] lg:items-center lg:gap-10 lg:px-8">
         <article className="rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-2xl shadow-black/30 backdrop-blur md:p-8">
           <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-semibold tracking-[0.16em] text-cyan-200">
-            <Image src="/logo.png" alt="DocQuest logo" width={22} height={22} className="rounded" priority />
+            <Image
+              src="/logo.png"
+              alt="DocQuest logo"
+              width={22}
+              height={22}
+              className="rounded"
+              priority
+            />
             INTELLIGENT DOCUMENT OPS
           </div>
 
           <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-white md:text-4xl lg:text-5xl">
-            Transform dense documents into fast, high-confidence answers with DocQuest.
+            Transform dense documents into fast, high-confidence answers with
+            DocQuest.
           </h1>
 
           <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-            DocQuest is built for serious analysis workflows where accuracy, continuity, and speed matter.
-            Upload once, keep context over time, and get synthesis that helps you decide faster.
+            DocQuest is built for serious analysis workflows where accuracy,
+            continuity, and speed matter. Upload once, keep context over time,
+            and get synthesis that helps you decide faster.
           </p>
 
           <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -110,8 +125,12 @@ export default function LoginPage() {
                 className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300/40"
                 style={{ animationDelay: `${index * 120}ms` }}
               >
-                <h2 className="text-sm font-semibold text-cyan-200">{item.title}</h2>
-                <p className="mt-2 text-xs leading-6 text-slate-300">{item.description}</p>
+                <h2 className="text-sm font-semibold text-cyan-200">
+                  {item.title}
+                </h2>
+                <p className="mt-2 text-xs leading-6 text-slate-300">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
@@ -119,11 +138,22 @@ export default function LoginPage() {
 
         <aside className="w-full rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/30 backdrop-blur md:p-7">
           <div className="mb-5 flex items-center gap-3">
-            <Image src="/logo.png" alt="DocQuest logo" width={32} height={32} className="rounded" priority />
+            <Image
+              src="/logo.png"
+              alt="DocQuest logo"
+              width={32}
+              height={32}
+              className="rounded"
+              priority
+            />
             <div>
-              <h3 className="text-lg font-semibold text-white">{mode === "signup" ? "Create Account" : "Welcome Back"}</h3>
+              <h3 className="text-lg font-semibold text-white">
+                {mode === "signup" ? "Create Account" : "Welcome Back"}
+              </h3>
               <p className="text-xs text-slate-400">
-                {mode === "signup" ? "Create your DocQuest workspace access." : "Sign in to continue your research workspace."}
+                {mode === "signup"
+                  ? "Create your DocQuest workspace access."
+                  : "Sign in to continue your research workspace."}
               </p>
             </div>
           </div>
@@ -136,7 +166,9 @@ export default function LoginPage() {
                 setError("");
               }}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                mode === "login" ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-slate-800"
+                mode === "login"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
               Login
@@ -148,7 +180,9 @@ export default function LoginPage() {
                 setError("");
               }}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                mode === "signup" ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-slate-800"
+                mode === "signup"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
               Sign Up
@@ -208,7 +242,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {error ? <p className="mt-3 rounded-xl border border-rose-400/50 bg-rose-900/40 px-3 py-2 text-xs text-rose-100">{error}</p> : null}
+          {error ? (
+            <p className="mt-3 rounded-xl border border-rose-400/50 bg-rose-900/40 px-3 py-2 text-xs text-rose-100">
+              {error}
+            </p>
+          ) : null}
         </aside>
       </section>
     </main>

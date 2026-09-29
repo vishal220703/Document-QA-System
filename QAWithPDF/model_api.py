@@ -43,7 +43,9 @@ def load_model():
                 return model
             except Exception as ex:
                 last_error = ex
-                logging.warning("Failed to load Gemini model %s. Trying fallback.", model_name)
+                logging.warning(
+                    "Failed to load Gemini model %s. Trying fallback.", model_name
+                )
 
         if last_error is not None:
             raise last_error
@@ -62,9 +64,10 @@ def summarize_chat_title(question: str) -> str:
     try:
         response = load_model().complete(prompt)
         title = " ".join(str(getattr(response, "text", response)).strip().split())
-        title = title.strip('"\'`')
+        title = title.strip("\"'`")
         return title[:80] or fallback
     except Exception:
-        logging.warning("Unable to summarize chat title with Gemini; using question fallback.")
+        logging.warning(
+            "Unable to summarize chat title with Gemini; using question fallback."
+        )
         return fallback
-        

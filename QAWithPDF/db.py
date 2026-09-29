@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from QAWithPDF.config import get_database_url
 
-
 Base = declarative_base()
 
 engine = create_engine(get_database_url(), future=True, pool_pre_ping=True)
@@ -31,7 +30,9 @@ def _ensure_ownership_columns() -> None:
             columns = {column["name"] for column in inspector.get_columns(table_name)}
             if column_name not in columns:
                 connection.execute(
-                    text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" VARCHAR(64)')
+                    text(
+                        f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" VARCHAR(64)'
+                    )
                 )
 
 

@@ -6,9 +6,16 @@ const processIds = new Set();
 
 function collectWindowsProcessIds(port) {
   try {
-    const output = execFileSync("netstat", ["-ano", "-p", "tcp"], { encoding: "utf8" });
+    const output = execFileSync("netstat", ["-ano", "-p", "tcp"], {
+      encoding: "utf8",
+    });
     for (const line of output.split(/\r?\n/)) {
-      const match = line.match(new RegExp(`\\s+(?:TCP)\\s+[^\\s]+:${port}\\s+[^\\s]+\\s+LISTENING\\s+(\\d+)`, "i"));
+      const match = line.match(
+        new RegExp(
+          `\\s+(?:TCP)\\s+[^\\s]+:${port}\\s+[^\\s]+\\s+LISTENING\\s+(\\d+)`,
+          "i",
+        ),
+      );
       if (match) processIds.add(match[1]);
     }
   } catch {
@@ -18,8 +25,11 @@ function collectWindowsProcessIds(port) {
 
 function collectUnixProcessIds(port) {
   try {
-    const output = execFileSync("lsof", ["-ti", `tcp:${port}`], { encoding: "utf8" });
-    for (const processId of output.split(/\r?\n/).filter(Boolean)) processIds.add(processId.trim());
+    const output = execFileSync("lsof", ["-ti", `tcp:${port}`], {
+      encoding: "utf8",
+    });
+    for (const processId of output.split(/\r?\n/).filter(Boolean))
+      processIds.add(processId.trim());
   } catch {
     // No matching listener or lsof unavailable.
   }
@@ -33,7 +43,9 @@ for (const port of ports) {
 for (const processId of processIds) {
   try {
     if (os.platform() === "win32") {
-      execFileSync("taskkill", ["/PID", processId, "/T", "/F"], { stdio: "ignore" });
+      execFileSync("taskkill", ["/PID", processId, "/T", "/F"], {
+        stdio: "ignore",
+      });
     } else {
       process.kill(Number(processId), "SIGTERM");
     }

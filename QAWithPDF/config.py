@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 load_dotenv()
 
 
@@ -19,7 +18,9 @@ class Settings(BaseSettings):
 
     llm_provider: str = Field(default="gemini", alias="LLM_PROVIDER")
     gemini_api_key: str | None = Field(default=None, alias="GOOGLE_API_KEY")
-    gemini_model_name: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL_NAME")
+    gemini_model_name: str = Field(
+        default="gemini-2.5-flash", alias="GEMINI_MODEL_NAME"
+    )
     gemini_embedding_model_name: str = Field(
         default="gemini-embedding-001", alias="GEMINI_EMBEDDING_MODEL_NAME"
     )
@@ -42,9 +43,13 @@ class Settings(BaseSettings):
     auth_password: str = Field(default="admin123", alias="AUTH_PASSWORD")
     auth_secret_key: str = Field(default="change_me_in_env", alias="AUTH_SECRET_KEY")
     auth_algorithm: str = Field(default="HS256", alias="AUTH_ALGORITHM")
-    auth_token_expire_minutes: int = Field(default=60 * 12, alias="AUTH_TOKEN_EXPIRE_MINUTES")
+    auth_token_expire_minutes: int = Field(
+        default=60 * 12, alias="AUTH_TOKEN_EXPIRE_MINUTES"
+    )
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", case_sensitive=False
+    )
 
 
 settings = Settings()
@@ -67,7 +72,11 @@ def get_cors_origins() -> list[str]:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
-    configured = [origin.strip() for origin in settings.cors_origins_raw.split(",") if origin.strip()]
+    configured = [
+        origin.strip()
+        for origin in settings.cors_origins_raw.split(",")
+        if origin.strip()
+    ]
 
     merged: list[str] = []
     for origin in [*defaults, *configured]:

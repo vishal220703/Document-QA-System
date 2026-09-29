@@ -6,7 +6,9 @@ function normalizeApiBase(rawBase: string): string {
   return trimmed;
 }
 
-const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend");
+const API_BASE = normalizeApiBase(
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend",
+);
 const AUTH_TOKEN_KEY = "docquest_access_token";
 
 export type LoginResponse = {
@@ -44,7 +46,10 @@ async function readError(response: Response): Promise<string> {
   return text || `Request failed with status ${response.status}`;
 }
 
-async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+async function apiFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
   const response = await fetch(input, init);
   if (response.status === 401 && typeof window !== "undefined") {
     clearAuthToken();
@@ -55,7 +60,10 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
   return response;
 }
 
-export async function login(username: string, password: string): Promise<LoginResponse> {
+export async function login(
+  username: string,
+  password: string,
+): Promise<LoginResponse> {
   const response = await apiFetch(`${API_BASE}/api/v1/auth/login`, {
     method: "POST",
     headers: {
@@ -71,7 +79,10 @@ export async function login(username: string, password: string): Promise<LoginRe
   return response.json();
 }
 
-export async function signup(username: string, password: string): Promise<LoginResponse> {
+export async function signup(
+  username: string,
+  password: string,
+): Promise<LoginResponse> {
   const response = await apiFetch(`${API_BASE}/api/v1/auth/signup`, {
     method: "POST",
     headers: {
@@ -129,7 +140,7 @@ export async function uploadDocument(file: File): Promise<UploadResponse> {
   const response = await apiFetch(`${API_BASE}/api/v1/documents/upload`, {
     method: "POST",
     headers: authHeaders(),
-    body: formData
+    body: formData,
   });
 
   if (!response.ok) {
@@ -142,12 +153,16 @@ export async function uploadDocument(file: File): Promise<UploadResponse> {
 export async function askQuestion(
   documentId: string,
   question: string,
-  conversationId?: string | null
+  conversationId?: string | null,
 ): Promise<QueryResponse> {
   const response = await apiFetch(`${API_BASE}/api/v1/chat/query`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ document_id: documentId, question, conversation_id: conversationId ?? null })
+    body: JSON.stringify({
+      document_id: documentId,
+      question,
+      conversation_id: conversationId ?? null,
+    }),
   });
 
   if (!response.ok) {
@@ -157,8 +172,12 @@ export async function askQuestion(
   return response.json();
 }
 
-export async function listConversations(documentId?: string | null): Promise<ConversationSummary[]> {
-  const query = documentId ? `?document_id=${encodeURIComponent(documentId)}` : "";
+export async function listConversations(
+  documentId?: string | null,
+): Promise<ConversationSummary[]> {
+  const query = documentId
+    ? `?document_id=${encodeURIComponent(documentId)}`
+    : "";
   const response = await apiFetch(`${API_BASE}/api/v1/conversations${query}`, {
     headers: authHeaders(),
   });
@@ -168,21 +187,29 @@ export async function listConversations(documentId?: string | null): Promise<Con
   return response.json();
 }
 
-export async function getConversation(conversationId: string): Promise<ConversationDetail> {
-  const response = await apiFetch(`${API_BASE}/api/v1/conversations/${conversationId}`, {
-    headers: authHeaders(),
-  });
+export async function getConversation(
+  conversationId: string,
+): Promise<ConversationDetail> {
+  const response = await apiFetch(
+    `${API_BASE}/api/v1/conversations/${conversationId}`,
+    {
+      headers: authHeaders(),
+    },
+  );
   if (!response.ok) {
     throw new Error(await readError(response));
   }
   return response.json();
 }
 
-export async function createConversation(documentId: string, title?: string): Promise<ConversationSummary> {
+export async function createConversation(
+  documentId: string,
+  title?: string,
+): Promise<ConversationSummary> {
   const response = await apiFetch(`${API_BASE}/api/v1/conversations`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ document_id: documentId, title: title ?? null })
+    body: JSON.stringify({ document_id: documentId, title: title ?? null }),
   });
 
   if (!response.ok) {

@@ -82,14 +82,18 @@ def _compute_ingestion_quality(documents) -> dict:
         "empty_chunks": empty_chunks,
         "detected_pages": pages,
         "table_chunks": table_chunks,
-        "quality_score": round(max(0.0, 1.0 - (empty_chunks / max(len(documents), 1))), 3),
+        "quality_score": round(
+            max(0.0, 1.0 - (empty_chunks / max(len(documents), 1))), 3
+        ),
     }
 
 
 def _workspace_for_owner(session, workspace_id: str, owner_username: str) -> Workspace:
     workspace = (
         session.execute(
-            select(Workspace).where(Workspace.id == workspace_id, Workspace.owner_username == owner_username)
+            select(Workspace).where(
+                Workspace.id == workspace_id, Workspace.owner_username == owner_username
+            )
         )
         .scalars()
         .first()
@@ -102,7 +106,9 @@ def _workspace_for_owner(session, workspace_id: str, owner_username: str) -> Wor
 def _document_for_owner(session, document_id: str, owner_username: str) -> Document:
     document = (
         session.execute(
-            select(Document).where(Document.id == document_id, Document.owner_username == owner_username)
+            select(Document).where(
+                Document.id == document_id, Document.owner_username == owner_username
+            )
         )
         .scalars()
         .first()
@@ -120,8 +126,12 @@ def ingest_document(
 ) -> DocumentUploadResponse:
     document_id, saved_path = _store_upload(file, content)
     display_name = file.filename or saved_path.name
-    docs = load_data_from_bytes(file_name=file.filename or saved_path.name, file_bytes=content)
-    build_and_persist_index(documents=docs, index_dir=_document_storage_dir(document_id))
+    docs = load_data_from_bytes(
+        file_name=file.filename or saved_path.name, file_bytes=content
+    )
+    build_and_persist_index(
+        documents=docs, index_dir=_document_storage_dir(document_id)
+    )
     ingestion_quality = _compute_ingestion_quality(docs)
 
     with get_session() as session:
@@ -134,7 +144,11 @@ def ingest_document(
             )
         )
         if workspace_id:
-            _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+            _workspace_for_owner(
+                session=session,
+                workspace_id=workspace_id,
+                owner_username=owner_username,
+            )
             link = WorkspaceDocument(
                 workspace_id=workspace_id,
                 document_id=document_id,
@@ -157,7 +171,9 @@ def _conversation_title(question: str) -> str:
     return title[:80] if len(title) > 80 else title
 
 
-def _conversation_display_title(conversation: Conversation, first_message: Message | None) -> str:
+def _conversation_display_title(
+    conversation: Conversation, first_message: Message | None
+) -> str:
     legacy_titles = {"new chat", "pdf", "docx", "txt"}
     if (
         first_message
@@ -169,9 +185,13 @@ def _conversation_display_title(conversation: Conversation, first_message: Messa
     return conversation.title or "New Chat"
 
 
-def create_conversation(document_id: str, owner_username: str, title: str | None = None) -> ConversationSummary:
+def create_conversation(
+    document_id: str, owner_username: str, title: str | None = None
+) -> ConversationSummary:
     with get_session() as session:
-        _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
+        _document_for_owner(
+            session=session, document_id=document_id, owner_username=owner_username
+        )
         conversation = Conversation(
             owner_username=owner_username,
             document_id=document_id,
@@ -189,7 +209,9 @@ def create_conversation(document_id: str, owner_username: str, title: str | None
         )
 
 
-def create_workspace(payload: WorkspaceCreateRequest, owner_username: str) -> WorkspaceResponse:
+def create_workspace(
+    payload: WorkspaceCreateRequest, owner_username: str
+) -> WorkspaceResponse:
     with get_session() as session:
         workspace = Workspace(
             name=payload.name.strip(),
@@ -232,7 +254,9 @@ def list_workspaces(owner_username: str) -> list[WorkspaceResponse]:
         ]
 
 
-def list_conversations(document_id: str | None, owner_username: str) -> list[ConversationSummary]:
+def list_conversations(
+    document_id: str | None, owner_username: str
+) -> list[ConversationSummary]:
     with get_session() as session:
         stmt = (
             select(Conversation)
@@ -291,7 +315,9 @@ def get_conversation(conversation_id: str, owner_username: str) -> ConversationD
             parsed_citations: list[Citation] = []
             if row.citations_json:
                 try:
-                    parsed_citations = [Citation(**item) for item in json.loads(row.citations_json)]
+                    parsed_citations = [
+                        Citation(**item) for item in json.loads(row.citations_json)
+                    ]
                 except Exception:
                     parsed_citations = []
             messages.append(
@@ -321,7 +347,9 @@ def _resolve_conversation(
     owner_username: str,
 ) -> str:
     with get_session() as session:
-        _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
+        _document_for_owner(
+            session=session, document_id=document_id, owner_username=owner_username
+        )
         if conversation_id:
             conv = (
                 session.execute(
@@ -381,14 +409,20 @@ def _append_message_with_citations(
             conversation_id=conversation_id,
             role=role,
             content=content,
-            citations_json=(json.dumps([item.model_dump() for item in citations]) if citations else None),
+            citations_json=(
+                json.dumps([item.model_dump() for item in citations])
+                if citations
+                else None
+            ),
         )
         conv.updated_at = datetime.utcnow()
         session.add(msg)
 
 
 def _normalize_sentences(text: str) -> list[str]:
-    parts = [chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+", text) if chunk.strip()]
+    parts = [
+        chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+", text) if chunk.strip()
+    ]
     if parts:
         return parts
     return [text.strip()] if text.strip() else []
@@ -403,11 +437,13 @@ def _format_output(answer: str, output_mode: str) -> str:
 
     if output_mode == "executive_brief":
         lead = sentences[0] if sentences else "No summary available."
-        actions = sentences[1:4] if len(sentences) > 1 else ["Review document-specific findings."]
-        return (
-            f"Executive Summary\n\n{lead}\n\n"
-            "Key Actions\n"
-            + "\n".join(f"- {item}" for item in actions)
+        actions = (
+            sentences[1:4]
+            if len(sentences) > 1
+            else ["Review document-specific findings."]
+        )
+        return f"Executive Summary\n\n{lead}\n\n" "Key Actions\n" + "\n".join(
+            f"- {item}" for item in actions
         )
 
     if output_mode == "table":
@@ -446,7 +482,9 @@ def _extract_citations_from_nodes(source_nodes) -> list[Citation]:
 
         citations.append(
             Citation(
-                source=str(metadata.get("filename") or metadata.get("source") or "document"),
+                source=str(
+                    metadata.get("filename") or metadata.get("source") or "document"
+                ),
                 score=round(score, 4),
                 excerpt=(text[:280] if text else "No excerpt available"),
                 page=(int(metadata.get("page")) if metadata.get("page") else None),
@@ -459,7 +497,8 @@ def _verify_answer(question: str, answer: str, citations: list[Citation]) -> dic
     answer_tokens = {
         token.lower()
         for token in re.findall(r"[A-Za-z]{4,}", answer)
-        if token and token.lower() not in {"this", "that", "with", "from", "have", "will"}
+        if token
+        and token.lower() not in {"this", "that", "with", "from", "have", "will"}
     }
     support_text = " ".join(item.excerpt for item in citations).lower()
     if not answer_tokens:
@@ -497,7 +536,9 @@ def _extract_entities(text: str) -> list[str]:
     return cleaned[:20]
 
 
-def _update_workspace_memory_graph(workspace_id: str, question: str, answer: str) -> None:
+def _update_workspace_memory_graph(
+    workspace_id: str, question: str, answer: str
+) -> None:
     entities = _extract_entities(f"{question} {answer}")
     if len(entities) < 2:
         return
@@ -507,7 +548,10 @@ def _update_workspace_memory_graph(workspace_id: str, question: str, answer: str
         for label in entities:
             existing = (
                 session.execute(
-                    select(MemoryNode).where(MemoryNode.workspace_id == workspace_id, MemoryNode.label == label)
+                    select(MemoryNode).where(
+                        MemoryNode.workspace_id == workspace_id,
+                        MemoryNode.label == label,
+                    )
                 )
                 .scalars()
                 .first()
@@ -517,7 +561,9 @@ def _update_workspace_memory_graph(workspace_id: str, question: str, answer: str
                     workspace_id=workspace_id,
                     label=label,
                     node_type="entity",
-                    attributes_json=json.dumps({"first_seen": datetime.utcnow().isoformat()}),
+                    attributes_json=json.dumps(
+                        {"first_seen": datetime.utcnow().isoformat()}
+                    ),
                 )
                 session.add(node)
                 session.flush()
@@ -588,13 +634,17 @@ def _log_evaluation(
         )
 
 
-def _query_with_mode(query_engine, question: str, retrieval_mode: str) -> tuple[str, list, list[str]]:
+def _query_with_mode(
+    query_engine, question: str, retrieval_mode: str
+) -> tuple[str, list, list[str]]:
     source_nodes = []
     retrieval_trace: list[str] = []
 
     if retrieval_mode == "decompose":
         sub_questions = [
-            chunk.strip() for chunk in re.split(r"\band\b|\?|;", question, flags=re.IGNORECASE) if chunk.strip()
+            chunk.strip()
+            for chunk in re.split(r"\band\b|\?|;", question, flags=re.IGNORECASE)
+            if chunk.strip()
         ]
         if not sub_questions:
             sub_questions = [question]
@@ -608,11 +658,17 @@ def _query_with_mode(query_engine, question: str, retrieval_mode: str) -> tuple[
 
     if retrieval_mode == "hybrid":
         primary = query_engine.query(question)
-        breadth = query_engine.query(f"Provide broader supporting context for: {question}")
+        breadth = query_engine.query(
+            f"Provide broader supporting context for: {question}"
+        )
         source_nodes.extend(getattr(primary, "source_nodes", []) or [])
         source_nodes.extend(getattr(breadth, "source_nodes", []) or [])
         retrieval_trace.extend(["hybrid:primary", "hybrid:breadth"])
-        return f"{primary.response}\n\nAdditional Context:\n{breadth.response}", source_nodes, retrieval_trace
+        return (
+            f"{primary.response}\n\nAdditional Context:\n{breadth.response}",
+            source_nodes,
+            retrieval_trace,
+        )
 
     if retrieval_mode == "rerank":
         response = query_engine.query(question)
@@ -623,7 +679,11 @@ def _query_with_mode(query_engine, question: str, retrieval_mode: str) -> tuple[
 
     response = query_engine.query(question)
     retrieval_trace.append("standard:single_pass")
-    return response.response, list(getattr(response, "source_nodes", []) or []), retrieval_trace
+    return (
+        response.response,
+        list(getattr(response, "source_nodes", []) or []),
+        retrieval_trace,
+    )
 
 
 def answer_question(
@@ -641,11 +701,19 @@ def answer_question(
     resolved_conversation_id: str | None = None
     try:
         with get_session() as session:
-            _document_for_owner(session=session, document_id=document_id, owner_username=owner_username)
+            _document_for_owner(
+                session=session, document_id=document_id, owner_username=owner_username
+            )
             if workspace_id:
-                _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+                _workspace_for_owner(
+                    session=session,
+                    workspace_id=workspace_id,
+                    owner_username=owner_username,
+                )
 
-        query_engine = load_query_engine(_document_storage_dir(document_id), top_k=top_k)
+        query_engine = load_query_engine(
+            _document_storage_dir(document_id), top_k=top_k
+        )
 
         raw_answer, source_nodes, retrieval_trace = _query_with_mode(
             query_engine=query_engine,
@@ -655,7 +723,9 @@ def answer_question(
 
         citations = _extract_citations_from_nodes(source_nodes)
         formatted_answer = _format_output(raw_answer, output_mode=output_mode)
-        verification = _verify_answer(question=question, answer=formatted_answer, citations=citations)
+        verification = _verify_answer(
+            question=question, answer=formatted_answer, citations=citations
+        )
 
         resolved_conversation_id = _resolve_conversation(
             document_id=document_id,
@@ -663,7 +733,9 @@ def answer_question(
             conversation_id=conversation_id,
             owner_username=owner_username,
         )
-        _append_message(conversation_id=resolved_conversation_id, role="user", content=question)
+        _append_message(
+            conversation_id=resolved_conversation_id, role="user", content=question
+        )
         _append_message_with_citations(
             conversation_id=resolved_conversation_id,
             role="assistant",
@@ -672,7 +744,9 @@ def answer_question(
         )
 
         if workspace_id:
-            _update_workspace_memory_graph(workspace_id=workspace_id, question=question, answer=formatted_answer)
+            _update_workspace_memory_graph(
+                workspace_id=workspace_id, question=question, answer=formatted_answer
+            )
 
         elapsed_ms = (time.perf_counter() - started_at) * 1000.0
         _log_evaluation(
@@ -715,16 +789,24 @@ def answer_question(
         raise
 
 
-def get_workspace_graph(workspace_id: str, owner_username: str) -> WorkspaceGraphResponse:
+def get_workspace_graph(
+    workspace_id: str, owner_username: str
+) -> WorkspaceGraphResponse:
     with get_session() as session:
-        _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+        _workspace_for_owner(
+            session=session, workspace_id=workspace_id, owner_username=owner_username
+        )
         nodes = (
-            session.execute(select(MemoryNode).where(MemoryNode.workspace_id == workspace_id))
+            session.execute(
+                select(MemoryNode).where(MemoryNode.workspace_id == workspace_id)
+            )
             .scalars()
             .all()
         )
         edges = (
-            session.execute(select(MemoryEdge).where(MemoryEdge.workspace_id == workspace_id))
+            session.execute(
+                select(MemoryEdge).where(MemoryEdge.workspace_id == workspace_id)
+            )
             .scalars()
             .all()
         )
@@ -734,7 +816,9 @@ def get_workspace_graph(workspace_id: str, owner_username: str) -> WorkspaceGrap
                 id=node.id,
                 label=node.label,
                 node_type=node.node_type,
-                attributes=(json.loads(node.attributes_json) if node.attributes_json else None),
+                attributes=(
+                    json.loads(node.attributes_json) if node.attributes_json else None
+                ),
             )
             for node in nodes
         ]
@@ -748,13 +832,25 @@ def get_workspace_graph(workspace_id: str, owner_username: str) -> WorkspaceGrap
             )
             for edge in edges
         ]
-        return WorkspaceGraphResponse(workspace_id=workspace_id, nodes=node_views, edges=edge_views)
+        return WorkspaceGraphResponse(
+            workspace_id=workspace_id, nodes=node_views, edges=edge_views
+        )
 
 
-def create_query_automation(payload: QueryAutomationCreateRequest, owner_username: str) -> QueryAutomationResponse:
+def create_query_automation(
+    payload: QueryAutomationCreateRequest, owner_username: str
+) -> QueryAutomationResponse:
     with get_session() as session:
-        _workspace_for_owner(session=session, workspace_id=payload.workspace_id, owner_username=owner_username)
-        _document_for_owner(session=session, document_id=payload.document_id, owner_username=owner_username)
+        _workspace_for_owner(
+            session=session,
+            workspace_id=payload.workspace_id,
+            owner_username=owner_username,
+        )
+        _document_for_owner(
+            session=session,
+            document_id=payload.document_id,
+            owner_username=owner_username,
+        )
         link = (
             session.execute(
                 select(WorkspaceDocument).where(
@@ -766,7 +862,9 @@ def create_query_automation(payload: QueryAutomationCreateRequest, owner_usernam
             .first()
         )
         if link is None:
-            raise FileNotFoundError(f"Document is not part of workspace: {payload.document_id}")
+            raise FileNotFoundError(
+                f"Document is not part of workspace: {payload.document_id}"
+            )
         automation = QueryAutomation(
             workspace_id=payload.workspace_id,
             name=payload.name.strip(),
@@ -797,9 +895,13 @@ def create_query_automation(payload: QueryAutomationCreateRequest, owner_usernam
         )
 
 
-def list_query_automations(workspace_id: str, owner_username: str) -> list[QueryAutomationResponse]:
+def list_query_automations(
+    workspace_id: str, owner_username: str
+) -> list[QueryAutomationResponse]:
     with get_session() as session:
-        _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+        _workspace_for_owner(
+            session=session, workspace_id=workspace_id, owner_username=owner_username
+        )
         rows = (
             session.execute(
                 select(QueryAutomation)
@@ -829,13 +931,23 @@ def list_query_automations(workspace_id: str, owner_username: str) -> list[Query
         ]
 
 
-def run_query_automation(automation_id: str, owner_username: str) -> QueryAutomationRunResponse:
+def run_query_automation(
+    automation_id: str, owner_username: str
+) -> QueryAutomationRunResponse:
     with get_session() as session:
         automation = session.get(QueryAutomation, automation_id)
         if automation is None:
             raise FileNotFoundError(f"Automation not found: {automation_id}")
-        _workspace_for_owner(session=session, workspace_id=automation.workspace_id, owner_username=owner_username)
-        _document_for_owner(session=session, document_id=automation.document_id, owner_username=owner_username)
+        _workspace_for_owner(
+            session=session,
+            workspace_id=automation.workspace_id,
+            owner_username=owner_username,
+        )
+        _document_for_owner(
+            session=session,
+            document_id=automation.document_id,
+            owner_username=owner_username,
+        )
 
     result = answer_question(
         document_id=automation.document_id,
@@ -869,11 +981,19 @@ def run_query_automation(automation_id: str, owner_username: str) -> QueryAutoma
     )
 
 
-def get_evaluation_summary(workspace_id: str | None, owner_username: str) -> EvaluationSummaryResponse:
+def get_evaluation_summary(
+    workspace_id: str | None, owner_username: str
+) -> EvaluationSummaryResponse:
     with get_session() as session:
-        stmt = select(QueryEvaluation).where(QueryEvaluation.owner_username == owner_username)
+        stmt = select(QueryEvaluation).where(
+            QueryEvaluation.owner_username == owner_username
+        )
         if workspace_id:
-            _workspace_for_owner(session=session, workspace_id=workspace_id, owner_username=owner_username)
+            _workspace_for_owner(
+                session=session,
+                workspace_id=workspace_id,
+                owner_username=owner_username,
+            )
             stmt = stmt.where(QueryEvaluation.workspace_id == workspace_id)
         rows = session.execute(stmt).scalars().all()
 

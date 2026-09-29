@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { askQuestion, ConversationDetail, createConversation, getConversation } from "@/lib/api";
+import {
+  askQuestion,
+  ConversationDetail,
+  createConversation,
+  getConversation,
+} from "@/lib/api";
 
 type Props = {
   documentId: string | null;
@@ -16,10 +21,12 @@ export default function ChatPanel({
   filename,
   activeConversationId,
   onConversationChange,
-  onConversationRefresh
+  onConversationRefresh,
 }: Props) {
   const [question, setQuestion] = useState("");
-  const [conversation, setConversation] = useState<ConversationDetail | null>(null);
+  const [conversation, setConversation] = useState<ConversationDetail | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +41,9 @@ export default function ChatPanel({
         const details = await getConversation(activeConversationId);
         setConversation(details);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load conversation");
+        setError(
+          err instanceof Error ? err.message : "Unable to load conversation",
+        );
       }
     };
 
@@ -77,15 +86,21 @@ export default function ChatPanel({
   return (
     <section className="mx-auto flex h-[calc(100vh-1rem)] w-full max-w-5xl flex-col md:h-screen">
       <header className="border-b border-white/10 bg-slate-950/90 px-4 py-3 backdrop-blur">
-        <h2 className="text-sm font-semibold text-slate-100">DocQuest Assistant</h2>
-        <p className="mt-1 truncate text-xs text-slate-400">{filename ? `Using: ${filename}` : "Upload a document to begin"}</p>
+        <h2 className="text-sm font-semibold text-slate-100">
+          DocQuest Assistant
+        </h2>
+        <p className="mt-1 truncate text-xs text-slate-400">
+          {filename ? `Using: ${filename}` : "Upload a document to begin"}
+        </p>
       </header>
 
       <div className="flex-1 overflow-auto px-3 py-4 md:px-6">
         {!conversation ? (
           <div className="mx-auto mt-12 max-w-md rounded-2xl border border-white/10 bg-slate-900/50 p-6 text-center text-slate-400">
             <p>Ask anything about your uploaded document.</p>
-            <p className="mt-2 text-sm">Use natural prompts like you would in ChatGPT.</p>
+            <p className="mt-2 text-sm">
+              Use natural prompts like you would in ChatGPT.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -99,9 +114,13 @@ export default function ChatPanel({
                 }`}
               >
                 <p className="mb-1 text-xs text-slate-300">
-                  <strong>{message.role === "user" ? "You" : "Assistant"}</strong>
+                  <strong>
+                    {message.role === "user" ? "You" : "Assistant"}
+                  </strong>
                 </p>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{message.content}</div>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-100">
+                  {message.content}
+                </div>
               </article>
             ))}
           </div>
@@ -111,7 +130,9 @@ export default function ChatPanel({
       <div className="border-t border-white/10 bg-slate-950/95 px-3 py-3 backdrop-blur md:px-6 md:py-4">
         <textarea
           value={question}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setQuestion(event.target.value)}
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+            setQuestion(event.target.value)
+          }
           placeholder="Message DocQuest"
           rows={3}
           className="w-full resize-y rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-blue-400/60"
@@ -127,7 +148,11 @@ export default function ChatPanel({
         </div>
       </div>
 
-      {error ? <p className="mx-3 mb-3 rounded-xl border border-rose-400/50 bg-rose-900/40 px-3 py-2 text-xs text-rose-100 md:mx-6">{error}</p> : null}
+      {error ? (
+        <p className="mx-3 mb-3 rounded-xl border border-rose-400/50 bg-rose-900/40 px-3 py-2 text-xs text-rose-100 md:mx-6">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }

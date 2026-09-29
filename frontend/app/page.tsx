@@ -6,14 +6,21 @@ import { useRouter } from "next/navigation";
 import ChatPanel from "@/components/ChatPanel";
 import ConversationsPanel from "@/components/ConversationsPanel";
 import UploadPanel from "@/components/UploadPanel";
-import { clearAuthToken, ConversationSummary, getAuthToken, listConversations } from "@/lib/api";
+import {
+  clearAuthToken,
+  ConversationSummary,
+  getAuthToken,
+  listConversations,
+} from "@/lib/api";
 
 export default function HomePage() {
   const router = useRouter();
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(340);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
@@ -79,7 +86,14 @@ export default function HomePage() {
       >
         <aside className="relative border-b border-white/10 bg-slate-900/90 p-3 backdrop-blur md:border-b-0 md:border-r">
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/60 px-3 py-2 text-sm font-semibold tracking-wide text-slate-100">
-            <Image src="/logo.png" alt="DocQuest logo" width={24} height={24} className="rounded" priority />
+            <Image
+              src="/logo.png"
+              alt="DocQuest logo"
+              width={24}
+              height={24}
+              className="rounded"
+              priority
+            />
             <span className="flex-1">DocQuest</span>
             <button
               type="button"
@@ -110,7 +124,9 @@ export default function HomePage() {
             activeConversationId={activeConversationId}
             onSelectConversation={(conversationId) => {
               setActiveConversationId(conversationId);
-              const selected = conversations.find((item) => item.id === conversationId);
+              const selected = conversations.find(
+                (item) => item.id === conversationId,
+              );
               if (!selected) return;
               setDocumentId(selected.document_id);
               setFilename(null);
@@ -123,7 +139,9 @@ export default function HomePage() {
             documentId={documentId}
             filename={filename}
             activeConversationId={activeConversationId}
-            onConversationChange={(conversationId) => setActiveConversationId(conversationId)}
+            onConversationChange={(conversationId) =>
+              setActiveConversationId(conversationId)
+            }
             onConversationRefresh={() => void refreshConversations()}
           />
         </section>

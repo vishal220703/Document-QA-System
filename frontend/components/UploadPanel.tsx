@@ -55,7 +55,9 @@ export default function UploadPanel({ onUpload }: Props) {
   return (
     <section className="mb-3 rounded-2xl border border-white/10 bg-slate-800/40 p-3 shadow-xl shadow-black/20">
       <h2 className="text-sm font-semibold text-slate-100">Knowledge File</h2>
-      <p className="mt-1 text-xs text-slate-400">Upload one PDF, DOCX, or TXT document.</p>
+      <p className="mt-1 text-xs text-slate-400">
+        Upload one PDF, DOCX, or TXT document.
+      </p>
 
       <div className="mt-3 grid gap-2.5">
         <input
@@ -75,8 +77,12 @@ export default function UploadPanel({ onUpload }: Props) {
           onDragOver={(event) => event.preventDefault()}
           onKeyDown={onDropKeyDown}
         >
-          <strong className="text-sm text-slate-100">Choose file or drag and drop</strong>
-          <span className="text-xs text-slate-400">The selected file becomes your current chat context.</span>
+          <strong className="text-sm text-slate-100">
+            Choose file or drag and drop
+          </strong>
+          <span className="text-xs text-slate-400">
+            The selected file becomes your current chat context.
+          </span>
           <div>
             <button
               type="button"
@@ -109,7 +115,9 @@ export default function UploadPanel({ onUpload }: Props) {
         </button>
       </div>
 
-      {status ? <p className="mt-2 text-xs text-emerald-300">{status}</p> : null}
+      {status ? (
+        <p className="mt-2 text-xs text-emerald-300">{status}</p>
+      ) : null}
     </section>
   );
 }

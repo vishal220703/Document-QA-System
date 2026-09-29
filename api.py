@@ -43,7 +43,6 @@ from QAWithPDF.service import (
     run_query_automation,
 )
 
-
 app = FastAPI(title="DocQuest API", version="2.0.0")
 
 app.add_middleware(
@@ -103,7 +102,9 @@ async def upload_document(
 
 
 @app.post("/api/v1/chat/query", response_model=QueryResponse)
-def chat_query(payload: QueryRequest, current_user: str = Depends(get_current_user)) -> QueryResponse:
+def chat_query(
+    payload: QueryRequest, current_user: str = Depends(get_current_user)
+) -> QueryResponse:
     try:
         return answer_question(
             document_id=payload.document_id,
@@ -153,7 +154,9 @@ def get_conversation_route(
     conversation_id: str, current_user: str = Depends(get_current_user)
 ) -> ConversationDetail:
     try:
-        return get_conversation(conversation_id=conversation_id, owner_username=current_user)
+        return get_conversation(
+            conversation_id=conversation_id, owner_username=current_user
+        )
     except FileNotFoundError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
@@ -161,7 +164,9 @@ def get_conversation_route(
 
 
 @app.post("/api/v1/workspaces", response_model=WorkspaceResponse)
-def create_workspace_route(payload: WorkspaceCreateRequest, current_user: str = Depends(get_current_user)) -> WorkspaceResponse:
+def create_workspace_route(
+    payload: WorkspaceCreateRequest, current_user: str = Depends(get_current_user)
+) -> WorkspaceResponse:
     try:
         return create_workspace(payload=payload, owner_username=current_user)
     except Exception as ex:
@@ -169,17 +174,25 @@ def create_workspace_route(payload: WorkspaceCreateRequest, current_user: str = 
 
 
 @app.get("/api/v1/workspaces", response_model=list[WorkspaceResponse])
-def list_workspaces_route(current_user: str = Depends(get_current_user)) -> list[WorkspaceResponse]:
+def list_workspaces_route(
+    current_user: str = Depends(get_current_user),
+) -> list[WorkspaceResponse]:
     try:
         return list_workspaces(owner_username=current_user)
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
-@app.get("/api/v1/workspaces/{workspace_id}/graph", response_model=WorkspaceGraphResponse)
-def workspace_graph_route(workspace_id: str, current_user: str = Depends(get_current_user)) -> WorkspaceGraphResponse:
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/graph", response_model=WorkspaceGraphResponse
+)
+def workspace_graph_route(
+    workspace_id: str, current_user: str = Depends(get_current_user)
+) -> WorkspaceGraphResponse:
     try:
-        return get_workspace_graph(workspace_id=workspace_id, owner_username=current_user)
+        return get_workspace_graph(
+            workspace_id=workspace_id, owner_username=current_user
+        )
     except FileNotFoundError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
@@ -205,20 +218,26 @@ def list_automations_route(
     current_user: str = Depends(get_current_user),
 ) -> list[QueryAutomationResponse]:
     try:
-        return list_query_automations(workspace_id=workspace_id, owner_username=current_user)
+        return list_query_automations(
+            workspace_id=workspace_id, owner_username=current_user
+        )
     except FileNotFoundError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
-@app.post("/api/v1/automations/{automation_id}/run", response_model=QueryAutomationRunResponse)
+@app.post(
+    "/api/v1/automations/{automation_id}/run", response_model=QueryAutomationRunResponse
+)
 def run_automation_route(
     automation_id: str,
     current_user: str = Depends(get_current_user),
 ) -> QueryAutomationRunResponse:
     try:
-        return run_query_automation(automation_id=automation_id, owner_username=current_user)
+        return run_query_automation(
+            automation_id=automation_id, owner_username=current_user
+        )
     except FileNotFoundError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
     except Exception as ex:
@@ -231,7 +250,9 @@ def evaluation_summary_route(
     current_user: str = Depends(get_current_user),
 ) -> EvaluationSummaryResponse:
     try:
-        return get_evaluation_summary(workspace_id=workspace_id, owner_username=current_user)
+        return get_evaluation_summary(
+            workspace_id=workspace_id, owner_username=current_user
+        )
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
@@ -248,7 +269,9 @@ def create_api_key_route(
 
 
 @app.get("/api/v1/platform/api-keys", response_model=list[ApiKeyResponse])
-def list_api_keys_route(current_user: str = Depends(get_current_user)) -> list[ApiKeyResponse]:
+def list_api_keys_route(
+    current_user: str = Depends(get_current_user),
+) -> list[ApiKeyResponse]:
     try:
         return list_api_keys(owner_username=current_user)
     except Exception as ex:

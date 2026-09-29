@@ -18,7 +18,9 @@ class QueryRequest(BaseModel):
     conversation_id: str | None = None
     workspace_id: str | None = None
     retrieval_mode: Literal["standard", "hybrid", "decompose", "rerank"] = "hybrid"
-    output_mode: Literal["standard", "bullet_points", "executive_brief", "table", "json"] = "standard"
+    output_mode: Literal[
+        "standard", "bullet_points", "executive_brief", "table", "json"
+    ] = "standard"
     verification_required: bool = True
     top_k: int | None = None
 
@@ -133,7 +135,9 @@ class QueryAutomationCreateRequest(BaseModel):
     document_id: str
     prompt: str = Field(..., min_length=3)
     retrieval_mode: Literal["standard", "hybrid", "decompose", "rerank"] = "hybrid"
-    output_mode: Literal["standard", "bullet_points", "executive_brief", "table", "json"] = "executive_brief"
+    output_mode: Literal[
+        "standard", "bullet_points", "executive_brief", "table", "json"
+    ] = "executive_brief"
     verification_required: bool = True
     schedule_cron: str = "0 9 * * 1-5"
 

@@ -26,7 +26,9 @@ def _create_access_token(username: str) -> tuple[str, int]:
         "iat": datetime.now(timezone.utc),
         "jti": secrets.token_hex(8),
     }
-    token = jwt.encode(payload, settings.auth_secret_key, algorithm=settings.auth_algorithm)
+    token = jwt.encode(
+        payload, settings.auth_secret_key, algorithm=settings.auth_algorithm
+    )
     return token, expire_minutes * 60
 
 
@@ -38,14 +40,22 @@ def _create_login_response(username: str) -> LoginResponse:
 def signup_user(username: str, password: str) -> LoginResponse:
     normalized_username = username.strip()
     if not normalized_username:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username is required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Username is required"
+        )
 
     with get_session() as session:
-        existing = session.execute(select(User).where(User.username == normalized_username)).scalar_one_or_none()
+        existing = session.execute(
+            select(User).where(User.username == normalized_username)
+        ).scalar_one_or_none()
         if existing is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Username already exists"
+            )
 
-        new_user = User(username=normalized_username, password_hash=pwd_context.hash(password))
+        new_user = User(
+            username=normalized_username, password_hash=pwd_context.hash(password)
+        )
         session.add(new_user)
 
     return _create_login_response(username=normalized_username)
@@ -55,7 +65,9 @@ def login_user(username: str, password: str) -> LoginResponse:
     normalized_username = username.strip()
 
     with get_session() as session:
-        user = session.execute(select(User).where(User.username == normalized_username)).scalar_one_or_none()
+        user = session.execute(
+            select(User).where(User.username == normalized_username)
+        ).scalar_one_or_none()
         if user is not None and pwd_context.verify(password, user.password_hash):
             return _create_login_response(username=normalized_username)
 
@@ -71,13 +83,20 @@ def login_user(username: str, password: str) -> LoginResponse:
     )
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, settings.auth_secret_key, algorithms=[settings.auth_algorithm])
+        payload = jwt.decode(
+            token, settings.auth_secret_key, algorithms=[settings.auth_algorithm]
+        )
         username = payload.get("sub")
         if not isinstance(username, str) or not username.strip():
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+            )
         return username
     except JWTError:
         # Fallback: support product API keys in Bearer header.
@@ -85,7 +104,9 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         with get_session() as session:
             key = (
                 session.execute(
-                    select(ApiKey).where(ApiKey.key_hash == hashed, ApiKey.is_active.is_(True))
+                    select(ApiKey).where(
+                        ApiKey.key_hash == hashed, ApiKey.is_active.is_(True)
+                    )
                 )
                 .scalars()
                 .first()
@@ -94,4 +115,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 key.last_used_at = datetime.utcnow()
                 return key.owner_username
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+        )

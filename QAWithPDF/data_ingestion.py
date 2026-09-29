@@ -36,7 +36,11 @@ def _extract_text(file_name: str, file_bytes: bytes) -> list[Document]:
                 pages.append(
                     Document(
                         text=content,
-                        metadata={"filename": file_name, "page": page_idx, "source_kind": "page_text"},
+                        metadata={
+                            "filename": file_name,
+                            "page": page_idx,
+                            "source_kind": "page_text",
+                        },
                     )
                 )
         pdf_doc.close()
@@ -48,7 +52,9 @@ def _extract_text(file_name: str, file_bytes: bytes) -> list[Document]:
         doc = docx.Document(BytesIO(file_bytes))
         chunks: list[Document] = []
 
-        paragraph_text = _clean_text("\n".join(para.text for para in doc.paragraphs if para.text.strip()))
+        paragraph_text = _clean_text(
+            "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        )
         if paragraph_text:
             chunks.append(
                 Document(
@@ -68,7 +74,11 @@ def _extract_text(file_name: str, file_bytes: bytes) -> list[Document]:
                 chunks.append(
                     Document(
                         text=table_text,
-                        metadata={"filename": file_name, "source_kind": "table", "table_index": table_idx},
+                        metadata={
+                            "filename": file_name,
+                            "source_kind": "table",
+                            "table_index": table_idx,
+                        },
                     )
                 )
 
@@ -94,4 +104,6 @@ def load_data_from_path(file_path: str | Path) -> list[Document]:
 
 
 def load_data(uploaded_file):
-    return load_data_from_bytes(file_name=uploaded_file.name, file_bytes=uploaded_file.read())
+    return load_data_from_bytes(
+        file_name=uploaded_file.name, file_bytes=uploaded_file.read()
+    )
